@@ -87,19 +87,31 @@ export default function TechnicianJobsPage() {
         {loading ? (
           <div className="text-center text-gray-500">Loading jobs...</div>
         ) : (
-          <div className="grid gap-3">
+          <div className="space-y-4">
             {orders.length === 0 ? (
               <div className="text-sm text-gray-500">No assigned work orders for today.</div>
             ) : (
-              orders.map((o) => (
-                <WorkOrderCard 
-                  key={o.id} 
-                  data={o} 
-                  onStart={(id) => setStatus(id, "IN_PROGRESS")} 
-                  onComplete={(id) => setStatus(id, "COMPLETED")} 
-                  onMarkPaid={(id) => markPaid(id)} 
-                />
-              ))
+              <>
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <p className="text-sm font-semibold text-blue-900 mb-1">Optimized Route Order</p>
+                  <p className="text-xs text-blue-700">Follow this sequence to minimize fuel cost and service time:</p>
+                </div>
+                <div className="grid gap-3 pl-10">
+                  {orders.map((o, index) => (
+                    <div key={o.id} className="relative">
+                      <div className="absolute -left-10 top-4 flex items-center justify-center w-8 h-8 rounded-full bg-blue-600 text-white text-sm font-bold z-10">
+                        {index + 1}
+                      </div>
+                      <WorkOrderCard 
+                        data={o} 
+                        onStart={(id) => setStatus(id, "IN_PROGRESS")} 
+                        onComplete={(id) => setStatus(id, "COMPLETED")} 
+                        onMarkPaid={(id) => markPaid(id)} 
+                      />
+                    </div>
+                  ))}
+                </div>
+              </>
             )}
           </div>
         )}

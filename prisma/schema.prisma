@@ -182,6 +182,7 @@ model TechnicianSchedule {
   routeOrder    Json         // Array of WorkOrder IDs (optimized sequence)
   totalDistance Float?
   totalDuration Float?
+  totalFuelCost Float?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 }

@@ -60,13 +60,15 @@ export default function TechnicianByIdPage() {
       // Filter work orders for this technician
       const technicianWorkOrders = (allWorkOrders as any[]).filter((w: any) => w.technicianId === technicianId);
       
-      // Get optimized route order
+      // Get optimized route order - use saved schedule if available, otherwise optimize
       const scheduleResponse = await fetch(`/api/optimize-route`, { 
         method: "POST", 
         headers: { "Content-Type": "application/json" }, 
         body: JSON.stringify({ technicianId }) 
       });
       const schedule = await scheduleResponse.json();
+      
+      // Use routeOrder from saved schedule (already optimized)
       const order: string[] = schedule?.schedule?.routeOrder ?? [];
       
       // Create a map of work orders by ID
@@ -74,7 +76,7 @@ export default function TechnicianByIdPage() {
         technicianWorkOrders.map((w: any) => [w.id, w])
       );
       
-      // Order work orders according to route order, fallback to creation order
+      // Order work orders according to route order - preserve exact order from schedule
       const ordered = order.length > 0
         ? order.map((id) => woById[id]).filter(Boolean)
         : technicianWorkOrders;
@@ -149,19 +151,31 @@ export default function TechnicianByIdPage() {
           crumbs={[{ label: "Technician", href: "/technician" }, { label: name }]} 
           right={<Button variant="secondary" onClick={load}>Refresh</Button>} 
         />
-        <div className="grid gap-3">
+        <div className="space-y-4">
           {orders.length === 0 ? (
             <div className="text-sm text-gray-500">No assigned work orders.</div>
           ) : (
-            orders.map((o) => (
-              <WorkOrderCard 
-                key={o.id} 
-                data={o} 
-                onStart={(id) => setStatus(id, "IN_PROGRESS")} 
-                onComplete={(id) => setStatus(id, "COMPLETED")} 
-                onMarkPaid={(id) => markPaid(id)} 
-              />
-            ))
+            <>
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <p className="text-sm font-semibold text-blue-900 mb-1">Optimized Route Order</p>
+                <p className="text-xs text-blue-700">Follow this sequence to minimize fuel cost and service time:</p>
+              </div>
+              <div className="grid gap-3 pl-10">
+                {orders.map((o, index) => (
+                  <div key={o.id} className="relative">
+                    <div className="absolute -left-10 top-4 flex items-center justify-center w-8 h-8 rounded-full bg-blue-600 text-white text-sm font-bold z-10">
+                      {index + 1}
+                    </div>
+                    <WorkOrderCard 
+                      data={o} 
+                      onStart={(id) => setStatus(id, "IN_PROGRESS")} 
+                      onComplete={(id) => setStatus(id, "COMPLETED")} 
+                      onMarkPaid={(id) => markPaid(id)} 
+                    />
+                  </div>
+                ))}
+              </div>
+            </>
           )}
         </div>
       </main>
