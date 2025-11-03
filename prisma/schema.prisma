@@ -1,0 +1,187 @@
+// -------------------------------
+// Datasource & Generator
+// -------------------------------
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// -------------------------------
+// Enums
+// -------------------------------
+
+enum UserRole {
+  ADMIN
+  TECHNICIAN
+}
+
+enum TechnicianStatus {
+  AVAILABLE
+  BUSY
+  OFFLINE
+}
+
+enum WorkOrderStatus {
+  PENDING
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum PriorityLevel {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum BillingStatus {
+  PENDING
+  PAID
+  CANCELLED
+}
+
+enum ComplaintType {
+  AC
+  FAN
+  CYLINDER
+}
+
+// -------------------------------
+// User & Auth Models
+// -------------------------------
+
+model User {
+  id        String     @id @default(cuid())
+  name      String
+  email     String     @unique
+  password  String
+  role      UserRole   @default(TECHNICIAN)
+  technician Technician?
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+// -------------------------------
+// Technician Models
+// -------------------------------
+
+model Technician {
+  id              String              @id @default(cuid())
+  userId          String              @unique
+  user            User                @relation(fields: [userId], references: [id])
+  skills          String[]
+  specialty       ComplaintType?
+  currentStatus   TechnicianStatus    @default(AVAILABLE)
+  currentLat      Float?
+  currentLng      Float?
+  assignedOrders  WorkOrder[]         @relation("TechnicianOrders")
+  schedules       TechnicianSchedule[]
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+}
+
+// -------------------------------
+// Customer Models
+// -------------------------------
+
+model Customer {
+  id          String      @id @default(cuid())
+  name        String
+  phone       String?
+  email       String?
+  address     String
+  latitude    Float?
+  longitude   Float?
+  complaintDescription String?
+  complaintType        ComplaintType?
+  workOrders  WorkOrder[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// -------------------------------
+// Work Orders
+// -------------------------------
+
+model WorkOrder {
+  id             String          @id @default(cuid())
+  title          String
+  description    String?
+  status         WorkOrderStatus @default(PENDING)
+  priority       PriorityLevel   @default(MEDIUM)
+  scheduledDate  DateTime?
+  completionDate DateTime?
+
+  customerId     String
+  customer       Customer        @relation(fields: [customerId], references: [id])
+
+  technicianId   String?
+  technician     Technician?     @relation("TechnicianOrders", fields: [technicianId], references: [id])
+
+  inventoryItems WorkOrderInventory[]
+  billing        Billing?
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+// -------------------------------
+// Inventory
+// -------------------------------
+
+model InventoryItem {
+  id            String @id @default(cuid())
+  name          String
+  sku           String?
+  quantity      Int @default(0)
+  unitPrice     Float
+  workOrders    WorkOrderInventory[]
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model WorkOrderInventory {
+  id            String @id @default(cuid())
+  workOrderId   String
+  inventoryId   String
+  quantityUsed  Int @default(1)
+  workOrder     WorkOrder      @relation(fields: [workOrderId], references: [id])
+  inventoryItem InventoryItem  @relation(fields: [inventoryId], references: [id])
+}
+
+// -------------------------------
+// Billing
+// -------------------------------
+
+model Billing {
+  id            String @id @default(cuid())
+  workOrderId   String @unique
+  totalAmount   Float @default(0)
+  status        BillingStatus @default(PENDING)
+  invoiceNumber String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  workOrder     WorkOrder @relation(fields: [workOrderId], references: [id])
+}
+
+// -------------------------------
+// Technician Schedule (Route Optimization Results)
+// -------------------------------
+
+model TechnicianSchedule {
+  id            String      @id @default(cuid())
+  technicianId  String
+  technician    Technician  @relation(fields: [technicianId], references: [id])
+  date          DateTime
+  routeOrder    Json         // Array of WorkOrder IDs (optimized sequence)
+  totalDistance Float?
+  totalDuration Float?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
