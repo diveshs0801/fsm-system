@@ -111,7 +111,7 @@ export default function AdminWorkOrdersPage() {
     await fetch(`/api/workorders/${workOrderId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ technicianId: techId }),
+      body: JSON.stringify({ technicianId: techId || null }),
     });
     await loadAll();
   }
