@@ -5,13 +5,19 @@ import Sidebar from "@/components/Sidebar";
 import { Button } from "@/components/ui/Button";
 import PageHeader from "@/components/PageHeader";
 
+type InventoryRow = { id: string; name: string; sku?: string; quantity: number; unitPrice: number; usedCount?: number };
+
 export default function AdminInventoryPage() {
-  const [inventory, setInventory] = useState<{ id: string; name: string; sku?: string; quantity: number; unitPrice: number }[]>([]);
+  const [inventory, setInventory] = useState<InventoryRow[]>([]);
   const [form, setForm] = useState<{ name: string; sku?: string; quantity: number; unitPrice: number }>({ name: "", sku: "", quantity: 0, unitPrice: 0 });
 
   async function load() {
-    const inv = await fetch("/api/inventory").then((r) => r.json());
-    setInventory(inv);
+    const [inv, usage] = await Promise.all([
+      fetch("/api/inventory").then((r) => r.json()),
+      fetch("/api/inventory/usage").then((r) => r.json()),
+    ]);
+    const usedById: Record<string, number> = Object.fromEntries((usage as any[]).map((u: any) => [u.id, u.usedCount ?? 0]));
+    setInventory((inv as any[]).map((i: any) => ({ ...i, usedCount: usedById[i.id] ?? 0 })));
   }
   useEffect(() => { load(); }, []);
 
@@ -38,7 +44,10 @@ export default function AdminInventoryPage() {
           </form>
           <div className="grid md:grid-cols-3 gap-2 text-sm">
             {inventory.map((i) => (
-              <div key={i.id} className="border rounded px-3 py-2 bg-gray-50 flex justify-between w-full"><span>{i.name}</span><span className="text-gray-500">₹{i.unitPrice.toFixed(2)}</span></div>
+              <div key={i.id} className="border rounded px-3 py-2 bg-gray-50 flex justify-between w-full">
+                <span>{i.name}</span>
+                <span className="text-gray-500">₹{i.unitPrice.toFixed(2)} · Stock: {i.quantity} · Used: {i.usedCount ?? 0}</span>
+              </div>
             ))}
           </div>
         </div>

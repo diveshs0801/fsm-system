@@ -23,6 +23,34 @@ type Props = {
 };
 
 export function WorkOrderCard({ data, onStart, onComplete, onMarkPaid }: Props) {
+  const statusLabel = (s: WorkOrderStatus): string => {
+    if (s === "IN_PROGRESS") return "Started";
+    if (s === "COMPLETED") return "Completed";
+    if (s === "CANCELLED") return "Cancelled";
+    // PENDING or SCHEDULED → Not Started
+    return "Not Started";
+  };
+
+  const statusColor = (s: WorkOrderStatus): "green" | "blue" | "yellow" | "gray" | "red" => {
+    if (s === "COMPLETED") return "green";
+    if (s === "IN_PROGRESS") return "blue";
+    if (s === "SCHEDULED") return "yellow";
+    if (s === "CANCELLED") return "red";
+    return "gray";
+  };
+
+  const billingLabel = (b?: "PENDING" | "PAID" | "CANCELLED"): string => {
+    if (b === "PAID") return "Payment Completed";
+    if (b === "CANCELLED") return "Payment Cancelled";
+    return "Payment Pending";
+  };
+
+  const billingColor = (b?: "PENDING" | "PAID" | "CANCELLED"): "green" | "red" | "gray" => {
+    if (b === "PAID") return "green";
+    if (b === "CANCELLED") return "red";
+    return "gray";
+  };
+
   return (
     <div className="border rounded-lg p-4 bg-white shadow-sm">
       <div className="flex items-start justify-between">
@@ -31,8 +59,8 @@ export function WorkOrderCard({ data, onStart, onComplete, onMarkPaid }: Props) 
           <p className="text-sm text-gray-500">{data.customer?.name} — {data.customer?.address}</p>
         </div>
         <div className="flex items-center gap-2">
-          <Badge color={data.status === "COMPLETED" ? "green" : data.status === "IN_PROGRESS" ? "blue" : data.status === "SCHEDULED" ? "yellow" : "gray"}>{data.status}</Badge>
-          <Badge color={data.billingStatus === "PAID" ? "green" : data.billingStatus === "CANCELLED" ? "red" : "gray"}>{data.billingStatus ?? "PENDING"}</Badge>
+          <Badge color={statusColor(data.status)}>{statusLabel(data.status)}</Badge>
+          <Badge color={billingColor(data.billingStatus)}>{billingLabel(data.billingStatus)}</Badge>
         </div>
       </div>
       {data.description && (
@@ -40,10 +68,10 @@ export function WorkOrderCard({ data, onStart, onComplete, onMarkPaid }: Props) 
       )}
       <div className="mt-3 flex gap-2">
         {onStart && (
-          <Button variant="secondary" onClick={() => onStart(data.id)}>Start Job</Button>
+          <Button variant="secondary" onClick={() => onStart(data.id)} disabled={data.status === "IN_PROGRESS" || data.status === "COMPLETED"}>Start Job</Button>
         )}
         {onComplete && (
-          <Button onClick={() => onComplete(data.id)}>Complete Job</Button>
+          <Button onClick={() => onComplete(data.id)} disabled={data.status === "COMPLETED"}>Complete Job</Button>
         )}
         {onMarkPaid && (
           <Button variant="ghost" onClick={() => onMarkPaid(data.id)} disabled={data.billingStatus === "PAID"}>Mark Paid</Button>

@@ -2,13 +2,13 @@
 
 import React from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useParams } from "next/navigation";
 
 type SidebarVariant = "admin" | "technician";
 
 type NavItem = { label: string; href: string; icon?: React.ReactNode };
 
-function getItems(variant: SidebarVariant): NavItem[] {
+function getItems(variant: SidebarVariant, technicianId?: string): NavItem[] {
   if (variant === "admin") {
     return [
       { label: "Dashboard", href: "/admin" },
@@ -20,18 +20,39 @@ function getItems(variant: SidebarVariant): NavItem[] {
       { label: "Optimize Route", href: "/admin/optimize" },
     ];
   }
+  
+  // If we have a technician ID in the URL, include it in the links
+  const baseHref = technicianId ? `/technician/${technicianId}` : "/technician";
+  
   return [
-    { label: "Dashboard", href: "/technician" },
-    { label: "My Jobs", href: "/technician/jobs" },
-    { label: "Inventory", href: "/technician/inventory" },
-    { label: "History", href: "/technician/history" },
-    { label: "Settings", href: "/technician/settings" },
+    { label: "Dashboard", href: baseHref },
+    { label: "My Jobs", href: technicianId ? `${baseHref}/jobs` : "/technician/jobs" },
+    { label: "Inventory", href: technicianId ? `${baseHref}/inventory` : "/technician/inventory" },
+    { label: "History", href: technicianId ? `${baseHref}/history` : "/technician/history" },
+    { label: "Settings", href: technicianId ? `${baseHref}/settings` : "/technician/settings" },
   ];
 }
 
 export function Sidebar({ variant = "admin" as SidebarVariant }: { variant?: SidebarVariant }) {
   const pathname = usePathname();
-  const items = getItems(variant);
+  const params = useParams();
+  
+  // Extract technician ID from URL if we're on a technician route
+  // Try params first, then fallback to parsing pathname
+  let technicianId: string | undefined;
+  if (variant === "technician") {
+    technicianId = params?.id ? (params.id as string) : undefined;
+    
+    // Fallback: extract from pathname if params didn't work
+    if (!technicianId && pathname.startsWith("/technician/")) {
+      const match = pathname.match(/^\/technician\/([^\/]+)/);
+      if (match && match[1] && match[1] !== "jobs" && match[1] !== "inventory" && match[1] !== "history" && match[1] !== "settings") {
+        technicianId = match[1];
+      }
+    }
+  }
+  
+  const items = getItems(variant, technicianId);
 
   return (
     <aside className="w-64 shrink-0 border-r bg-white min-h-screen hidden md:block">
