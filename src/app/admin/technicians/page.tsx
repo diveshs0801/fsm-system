@@ -3,9 +3,10 @@
 import React, { useEffect, useMemo, useState } from "react";
 import Sidebar from "@/components/Sidebar";
 import { Button } from "@/components/ui/Button";
+import { Badge } from "@/components/ui/Badge";
 import PageHeader from "@/components/PageHeader";
 
-type Technician = { id: string; user: { name: string } };
+type Technician = { id: string; user: { name: string }; currentStatus: "AVAILABLE" | "BUSY" | "OFFLINE" };
 
 export default function AdminTechniciansPage() {
   const [technicians, setTechnicians] = useState<Technician[]>([]);
@@ -50,20 +51,54 @@ export default function AdminTechniciansPage() {
         </div>
 
         <div className="grid md:grid-cols-2 gap-3">
-          {technicians.map((t) => (
-            <div key={t.id} className="border rounded p-3 bg-white flex items-center justify-between">
-              <div>
-                <div className="font-semibold">{t.user.name}</div>
-                <div className="text-xs text-gray-500">{t.id}</div>
+          {technicians.map((t) => {
+            const getStatusColor = (status: "AVAILABLE" | "BUSY" | "OFFLINE"): "green" | "yellow" | "gray" => {
+              if (status === "AVAILABLE") return "green";
+              if (status === "BUSY") return "yellow";
+              return "gray";
+            };
+            return (
+              <div key={t.id} className="border rounded p-3 bg-white flex items-center justify-between">
+                <div>
+                  <div className="font-semibold flex items-center gap-2">
+                    {t.user.name}
+                    <Badge color={getStatusColor(t.currentStatus)}>{t.currentStatus}</Badge>
+                  </div>
+                  <div className="text-xs text-gray-500">{t.id}</div>
+                </div>
+                <div className="flex gap-2">
+                  <Button 
+                    variant="ghost"
+                    onClick={() => updateTechStatus(t.id, "AVAILABLE")}
+                    className={t.currentStatus === "AVAILABLE" 
+                      ? "bg-green-500 hover:bg-green-600 text-white" 
+                      : "hover:bg-green-100 hover:text-green-700"}
+                  >
+                    Available
+                  </Button>
+                  <Button 
+                    variant="ghost"
+                    onClick={() => updateTechStatus(t.id, "BUSY")}
+                    className={t.currentStatus === "BUSY" 
+                      ? "bg-yellow-500 hover:bg-yellow-600 text-white" 
+                      : "hover:bg-yellow-100 hover:text-yellow-700"}
+                  >
+                    Busy
+                  </Button>
+                  <Button 
+                    variant="ghost"
+                    onClick={() => updateTechStatus(t.id, "OFFLINE")}
+                    className={t.currentStatus === "OFFLINE" 
+                      ? "bg-gray-700 hover:bg-gray-900 text-white" 
+                      : "hover:bg-gray-200 hover:text-gray-900"}
+                  >
+                    Offline
+                  </Button>
+                  <Button onClick={() => optimizeForTechnician(t.id)}>Optimize</Button>
+                </div>
               </div>
-              <div className="flex gap-2">
-                <Button variant="ghost" onClick={() => updateTechStatus(t.id, "AVAILABLE")}>Available</Button>
-                <Button variant="ghost" onClick={() => updateTechStatus(t.id, "BUSY")}>Busy</Button>
-                <Button variant="ghost" onClick={() => updateTechStatus(t.id, "OFFLINE")}>Offline</Button>
-                <Button onClick={() => optimizeForTechnician(t.id)}>Optimize</Button>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </main>
     </div>
